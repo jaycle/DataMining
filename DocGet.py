@@ -4,7 +4,7 @@ from lxml import html
 from urllib import request
 import csv
 
-USE_LOCAL = True        # Use a local web page instead of network (for testing)
+USE_LOCAL = False        # Use a local web page instead of network (for testing)
 LOCAL_SITE_DIR = 'local_sites'
 
 
@@ -19,8 +19,14 @@ def build_dict(tree):
     # At the time of this script, CNN content was placed in a div with attribute itemprop="articleBody"
     # We select all the paragraph tags under this div to trim to the article content
     content = tree.xpath('//div[@itemprop="articleBody"]//p')
+
+    # if above comes back empty, try this
+    if not content:
+        content = tree.xpath('//div[@id="storytext"]//p')
+
     word_dictionary = dict()
 
+    print('Building dictionary')
     for line in content:
         for word in re.finditer('[a-z]+', line.text_content(), re.IGNORECASE):
             w = word.group().lower()
@@ -45,11 +51,14 @@ if __name__ == '__main__' or 'builtins':
     else:
         with open('cnn_site_list.txt') as site_list:
             for site in site_list:
+                print('Requesting ', site.rstrip('\n'))
                 page = requests.get(site.rstrip('\n'))
+                print('Creating tree')
                 tree = html.fromstring(page.text)
-                dict_list.append((page, build_dict(tree)))
+                dict_list.append((page.url, build_dict(tree)))
 
     # Loop through list of dictionaries and build super dictionary for all sites
+    print('Building super dictionary')
     full_reference = []
     for article in dict_list:
         for word in article[1]:
@@ -57,6 +66,7 @@ if __name__ == '__main__' or 'builtins':
                 full_reference.append(word)
 
     # Build table
+    print('Creating Table')
     document_data = [['ARTICLE']]
 
     for column in range(len(full_reference)):
@@ -74,6 +84,7 @@ if __name__ == '__main__' or 'builtins':
 
         document_data.append(new_col)
 
+    print('Writing to file')
     with open('doc_data.csv', 'w') as output:
         doc_csv = csv.writer(output, lineterminator='\n')
         doc_csv.writerows(list(zip(*document_data)))
