@@ -1,6 +1,8 @@
 import re
 import numpy as np
 from sklearn import metrics
+import csv
+
 
 with open('doc_data.csv') as file:
     # grab header then convert to list from first line in file
@@ -19,7 +21,6 @@ def sort_matrix(array):
     :param array: numpy array of similarities between articles (2d)
     :return: list of tuples as (article_number_1, article_number_2, similarity_measurement)
     """
-
     size = len(array)
 
     l = []
@@ -28,11 +29,11 @@ def sort_matrix(array):
             l.append((row, col, array[row][col]))
 
     # sort by third value in tuple
-    return sorted(l, key=lambda sim: sim[2])
+    return sorted(l, key=lambda sim: sim[2], reverse=True)
 
 
 for i in range(len(articles)):
-    print(str(articles[i])[1:]) # remove b' from beginning when printing
+    print(str(articles[i])[1:])     # remove b' from beginning when printing
 
 print('Jaccard:')
 print(metrics.pairwise_distances(data, metric='jaccard'))
@@ -47,6 +48,21 @@ print('Euclidean:')
 print(100 - metrics.pairwise_distances(data, metric='euclidean'))
 euc = 1 - metrics.pairwise_distances(data, metric='euclidean')/100
 
-print(sort_matrix(jac))
-print(sort_matrix(cos))
-print(sort_matrix(euc))
+# build output
+sorted_similarities = [sort_matrix(jac), sort_matrix(cos), sort_matrix(euc)]
+sorted_similarities = list(zip(*sorted_similarities))
+
+table = [['Article A', 'Article B', 'Jaccard Similarity', 'Article A', 'Article B', 'Cosine Similarity',
+         'Article A', 'Article B', 'Euclidean Similarity']]
+for sim in sorted_similarities:
+    new_row = []
+    for attr in sim:
+        for x in attr:
+            new_row.append(x)
+    table.append(new_row)
+
+print('Writing to file')
+with open('sorted_similarity.csv', 'w') as output:
+    doc_csv = csv.writer(output, lineterminator='\n')
+    doc_csv.writerows(table)
+
