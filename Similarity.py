@@ -12,7 +12,7 @@ with open('doc_data.csv') as file:
     data = np.loadtxt(file, delimiter=',', usecols=range(1, len(headers)), dtype='int')
     # reset buffer to start and read article names
     file.seek(0)
-    articles = np.loadtxt(file, delimiter=',', skiprows=1, usecols=(0,), dtype='str')
+    articles = np.loadtxt(file, delimiter=',', skiprows=1, usecols=(0,), dtype='S')
 
 
 def sort_matrix(array):
@@ -32,37 +32,28 @@ def sort_matrix(array):
     return sorted(l, key=lambda sim: sim[2], reverse=True)
 
 
-for i in range(len(articles)):
-    print(str(articles[i])[1:])     # remove b' from beginning when printing
-
-print('Jaccard:')
-print(metrics.pairwise_distances(data, metric='jaccard'))
 jac = metrics.pairwise_distances(data, metric='jaccard')
-print(sort_matrix(jac))
-
-print('Cosine:')
-print(metrics.pairwise_distances(data, metric='cosine'))
 cos = metrics.pairwise_distances(data, metric='cosine')
-
-print('Euclidean:')
-print(100 - metrics.pairwise_distances(data, metric='euclidean'))
 euc = 1 - metrics.pairwise_distances(data, metric='euclidean')/100
 
-# build output
-sorted_similarities = [sort_matrix(jac), sort_matrix(cos), sort_matrix(euc)]
-sorted_similarities = list(zip(*sorted_similarities))
+# build similarity table output
+sorted_similarities = list(zip(*[sort_matrix(jac), sort_matrix(cos), sort_matrix(euc)]))
 
-table = [['Article A', 'Article B', 'Jaccard Similarity', 'Article A', 'Article B', 'Cosine Similarity',
-         'Article A', 'Article B', 'Euclidean Similarity']]
+similarity_table = [['Article A', 'Article B', 'Jaccard Similarity', 'Article A', 'Article B', 'Cosine Similarity',
+                    'Article A', 'Article B', 'Euclidean Similarity']]
 for sim in sorted_similarities:
-    new_row = []
-    for attr in sim:
-        for x in attr:
-            new_row.append(x)
-    table.append(new_row)
+    similarity_table.append(list(sum(sim, ())))
+
+# build article reference table
+reference_table = [['Article number', 'Site Address']]
+for i in range(len(articles)):
+    reference_table.append([i, articles[i].decode()])
 
 print('Writing to file')
 with open('sorted_similarity.csv', 'w') as output:
-    doc_csv = csv.writer(output, lineterminator='\n')
-    doc_csv.writerows(table)
+    sim_csv = csv.writer(output, lineterminator='\n')
+    sim_csv.writerows(similarity_table)
 
+with open('article_numbers.csv', 'w') as output:
+    articles_csv = csv.writer(output, lineterminator='\n')
+    articles_csv.writerows(reference_table)
