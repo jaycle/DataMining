@@ -34,7 +34,8 @@ def sort_matrix(array):
 
 jac = metrics.pairwise_distances(data, metric='jaccard')
 cos = metrics.pairwise_distances(data, metric='cosine')
-euc = 1 - metrics.pairwise_distances(data, metric='euclidean')/100
+euc = metrics.pairwise_distances(data, metric='euclidean')
+euc = 1 / (1 + euc)     # convert distance to similarity
 
 # build similarity table output
 sorted_similarities = list(zip(*[sort_matrix(jac), sort_matrix(cos), sort_matrix(euc)]))
